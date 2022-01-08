@@ -9,6 +9,9 @@ public class Sorcerer : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		
+		// Gameplay Ability System
+		PublicDependencyModuleNames.AddRange(new string[] { "GameplayTags", "GameplayAbilities", "GameplayTasks" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
