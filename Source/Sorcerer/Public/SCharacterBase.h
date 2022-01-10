@@ -6,6 +6,7 @@
 #include "AbilitySystemInterface.h"
 #include "SCharacterBase.generated.h"
 
+struct FOnAttributeChangeData;
 struct FGameplayTagContainer;
 class UGameplayEffect;
 class USGameplayAbility;
@@ -56,6 +57,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Sorcerer|Attributes")
 	FAttributeChangedDelegate OnHealthChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Sorcerer|Attributes")
+	FAttributeChangedDelegate OnMaxHealthChanged;
+
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	USAbilitySystemComponent* AbilitySystemComponent;
@@ -86,7 +90,8 @@ protected:
 	// Apply startup effects (run on the Server, replicated on the owning client)
 	virtual void AddStartupEffects();
 
-	// Called from SAttributeSet
-	virtual void HandleHealthChanged(float NewHealth);
+	virtual void HealthChanged(const FOnAttributeChangeData& Data);
+	
+	virtual void MaxHealthChanged(const FOnAttributeChangeData& Data);
 
 };

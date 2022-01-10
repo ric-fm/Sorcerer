@@ -38,6 +38,9 @@ void ASCharacterBase::PossessedBy(AController* NewController)
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		AddStartupAbilities();
 		AddStartupEffects();
+
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this,&ASCharacterBase::HealthChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMaxHealthAttribute()).AddUObject(this,&ASCharacterBase::MaxHealthChanged);
 	}
 }
 
@@ -112,9 +115,14 @@ void ASCharacterBase::AddStartupEffects()
 	bEffectsApplied = true;
 }
 
-void ASCharacterBase::HandleHealthChanged(float NewHealth)
+void ASCharacterBase::HealthChanged(const FOnAttributeChangeData& Data)
 {
-	OnHealthChanged.Broadcast(this, NewHealth);
+	OnHealthChanged.Broadcast(this, Data.NewValue);
+}
+
+void ASCharacterBase::MaxHealthChanged(const FOnAttributeChangeData& Data)
+{
+	OnMaxHealthChanged.Broadcast(this, Data.NewValue);
 }
 
 int32 ASCharacterBase::GetCharacterLevel() const

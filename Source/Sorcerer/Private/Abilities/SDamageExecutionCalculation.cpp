@@ -62,7 +62,7 @@ void USDamageExecutionCalculation::Execute_Implementation(
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().DamageDef, EvaluationParameters, DamageBase);
 
 	// Apply final damage
-	float FinalDamage = DamageBase * (100.0f / (100.0 +Armor));
+	float FinalDamage = DamageBase * (100.0f / (100.0f + Armor));
 
 	if(FinalDamage > 0.0f)
 	{

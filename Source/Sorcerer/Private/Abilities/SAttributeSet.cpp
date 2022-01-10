@@ -8,7 +8,7 @@
 USAttributeSet::USAttributeSet()
 	: Health(100.0f)
 	, MaxHealth(100.0f)
-	, Armor(50.0f)
+	, Armor(0.0f)
 {
 }
 
@@ -95,21 +95,11 @@ void USAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackD
 		{
 			// Apply the health change
 			SetHealth(FMath::Clamp(GetHealth() - LocalDamageDone, 0.0f, GetMaxHealth()));
-
-			if(TargetCharacter)
-			{
-				TargetCharacter->HandleHealthChanged(GetHealth());
-			}
 		}
 	}
 	else if(Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
-
-		if(TargetCharacter)
-		{
-			TargetCharacter->HandleHealthChanged(GetHealth());
-		}
 	}
 }
 
