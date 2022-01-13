@@ -59,7 +59,7 @@ void ASCharacterBase::AddStartupAbilities()
 
 	for(TSubclassOf<USGameplayAbility>& Ability : StartupAbilities)
 	{
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, GetCharacterLevel(), INDEX_NONE, this));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, GetCharacterLevel(), static_cast<int32>(Ability.GetDefaultObject()->AbilityInputID), this));
 	}
 
 	bAbilitiesGranted = true;

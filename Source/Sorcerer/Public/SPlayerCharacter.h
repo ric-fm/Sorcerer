@@ -6,6 +6,8 @@
 #include "SCharacterBase.h"
 #include "SPlayerCharacter.generated.h"
 
+class UCameraComponent;
+class USpringArmComponent;
 /**
  * Class for Main Character controlled by the User
  */
@@ -15,8 +17,26 @@ class SORCERER_API ASPlayerCharacter : public ASCharacterBase
 	GENERATED_BODY()
 	
 public:
+	ASPlayerCharacter();
+	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void OnRep_PlayerState() override;
+	
+protected:
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	USpringArmComponent* SpringArmComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UCameraComponent* CameraComponent;
+
+	// Is Input Bound to Abilities
+	bool bAbilitiesInputBound;
+
+	// Bind Input to Abilities (using enum ESAbilityInputID)
+	void BindAbilitiesInput();
+
+	
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	
