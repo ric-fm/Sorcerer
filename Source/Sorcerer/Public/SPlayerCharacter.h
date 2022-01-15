@@ -21,6 +21,11 @@ public:
 	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void OnRep_PlayerState() override;
+	virtual FVector GetPawnViewLocation() const override;
+
+	// Get the direction from a given location to the Player Aiming Point
+	UFUNCTION(BlueprintCallable, Category = "Sorcerer")
+	FVector GetAimingDirectionFrom(const FVector FromLocation) const;
 	
 protected:
 

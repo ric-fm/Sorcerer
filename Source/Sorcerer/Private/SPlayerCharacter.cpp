@@ -37,6 +37,40 @@ void ASPlayerCharacter::OnRep_PlayerState()
 	BindAbilitiesInput();
 }
 
+FVector ASPlayerCharacter::GetPawnViewLocation() const
+{
+	return CameraComponent->GetComponentLocation();
+}
+
+FVector ASPlayerCharacter::GetAimingDirectionFrom(const FVector FromLocation) const
+{
+	FHitResult HitResult;
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	
+	FCollisionShape Shape;
+	Shape.SetSphere(25.0f);
+
+	FVector StartLocation = GetPawnViewLocation();
+	FVector EndLocation = StartLocation + GetControlRotation().Vector() * 5000.0f;
+	
+	bool bHit = GetWorld()->SweepSingleByObjectType(HitResult, StartLocation, EndLocation, FQuat::Identity, ObjectQueryParams, Shape, QueryParams);
+	if(bHit)
+	{
+		EndLocation = HitResult.ImpactPoint;
+	}
+	
+	FVector Direction = EndLocation - FromLocation;
+	Direction.Normalize();
+
+	return Direction;
+}
+
 void ASPlayerCharacter::MoveForward(float Value)
 {
 	FRotator ControlRotation = GetControlRotation();

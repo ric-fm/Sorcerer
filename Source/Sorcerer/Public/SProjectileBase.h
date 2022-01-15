@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "SProjectileBase.generated.h"
 
+class UGameplayEffect;
 class UProjectileMovementComponent;
 class USphereComponent;
 
@@ -26,6 +27,12 @@ public:
 	virtual void PostInitializeComponents() override;
 	
 protected:
+	UFUNCTION(BlueprintNativeEvent)
+	void OnHitWorld(const FHitResult& Hit);
+
+	UFUNCTION(BlueprintNativeEvent)
+	void OnHitCharacter(const FHitResult& Hit);
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sorcerer|Components")
 	USphereComponent* SphereComponent;
 
@@ -44,11 +51,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sorcerer|Projectile")
 	UParticleSystem* ExplosionFX;
 
-	UFUNCTION()
-	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	// Gameplay Effects applied to the Hit Actor
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sorcerer|Projectile")
+	TArray<TSubclassOf<UGameplayEffect>> EffectClasses;
 
 	UFUNCTION()
-	virtual void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	virtual void Explode();
+	UFUNCTION()
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	void Explode();
+
+	void ApplyEffects(const FHitResult& Hit);
 };

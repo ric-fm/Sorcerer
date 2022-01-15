@@ -3,6 +3,8 @@
 
 #include "SProjectileBase.h"
 
+#include "SCharacterBase.h"
+#include "Abilities/SAbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -52,13 +54,25 @@ void ASProjectileBase::PostInitializeComponents()
 void ASProjectileBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
-	Explode();	
+	OnHitWorld(Hit);
 }
 
 void ASProjectileBase::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if(OtherActor != GetInstigator())
+	OnHitCharacter(SweepResult);
+}
+
+void ASProjectileBase::OnHitWorld_Implementation(const FHitResult& Hit)
+{
+	Explode();
+}
+
+void ASProjectileBase::OnHitCharacter_Implementation(const FHitResult& Hit)
+{
+	if(Hit.Actor != GetInstigator())
 	{
+		ApplyEffects(Hit);
+		
 		Explode();
 	}
 }
@@ -67,4 +81,33 @@ void ASProjectileBase::Explode()
 {
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionFX, GetActorLocation());
 	Destroy();
+}
+
+void ASProjectileBase::ApplyEffects(const FHitResult& Hit)
+{
+	if(EffectClasses.Num() > 0)
+	{
+		ASCharacterBase* Character = Cast<ASCharacterBase>(Hit.Actor.Get());
+		if(Character)
+		{
+			USAbilitySystemComponent* AbilitySystemComponent = Cast<USAbilitySystemComponent>(Character->GetAbilitySystemComponent());
+
+			FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+			EffectContext.AddInstigator(GetInstigator(), GetInstigator());
+			EffectContext.AddSourceObject(this);
+			EffectContext.AddHitResult(Hit);
+
+			for(TSubclassOf<UGameplayEffect> EffectClass : EffectClasses)
+			{
+				if(IsValid(EffectClass))
+				{
+					FGameplayEffectSpecHandle EffectSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, Character->GetCharacterLevel(),EffectContext);
+					if(EffectSpecHandle.IsValid())
+					{
+						AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*EffectSpecHandle.Data.Get());
+					}
+				}
+			}
+		}
+	}
 }
