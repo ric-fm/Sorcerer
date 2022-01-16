@@ -20,6 +20,7 @@ public:
 	ASEnemyCharacter();
 	
 protected:
+	virtual void HealthChanged(const FOnAttributeChangeData& Data) override;
 
 	// Health 3D World Widget
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sorcerer|Components")

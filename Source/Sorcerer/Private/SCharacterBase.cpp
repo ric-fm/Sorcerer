@@ -3,9 +3,12 @@
 #include "SCharacterBase.h"
 
 #include "AbilitySystemComponent.h"
+#include "GameplayEffectExtension.h"
 #include "Abilities/SAbilitySystemComponent.h"
 #include "Abilities/SAttributeSet.h"
 #include "Abilities/SGameplayAbility.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ASCharacterBase::ASCharacterBase()
 {
@@ -16,6 +19,8 @@ ASCharacterBase::ASCharacterBase()
 
 	bAbilitiesGranted = false;
 	bEffectsApplied = false;
+
+	GetMesh()->SetCollisionProfileName("NoCollision");
 }
 
 void ASCharacterBase::BeginPlay()
@@ -41,12 +46,33 @@ void ASCharacterBase::PossessedBy(AController* NewController)
 
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this,&ASCharacterBase::HealthChanged);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMaxHealthAttribute()).AddUObject(this,&ASCharacterBase::MaxHealthChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetDamageAttribute()).AddUObject(this,&ASCharacterBase::DamageChanged);
 	}
 }
 
 bool ASCharacterBase::IsAlive() const
 {
 	return GetHealth() > 0.0f;
+}
+
+void ASCharacterBase::SetRagdollEnabled(bool bEnabled)
+{
+	if(bEnabled)
+	{
+		GetMesh()->SetAllBodiesSimulatePhysics(true);
+		GetMesh()->SetCollisionProfileName("Ragdoll");
+
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetCharacterMovement()->DisableMovement();
+	}
+	else
+	{
+		GetMesh()->SetAllBodiesSimulatePhysics(false);
+		GetMesh()->SetCollisionProfileName("NoCollision");
+
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	}
 }
 
 void ASCharacterBase::AddStartupAbilities()
@@ -123,6 +149,58 @@ void ASCharacterBase::HealthChanged(const FOnAttributeChangeData& Data)
 void ASCharacterBase::MaxHealthChanged(const FOnAttributeChangeData& Data)
 {
 	OnMaxHealthChanged.Broadcast(this, Data.NewValue);
+}
+
+void ASCharacterBase::DamageChanged(const FOnAttributeChangeData& Data)
+{
+	if(Data.GEModData)
+	{
+		const FHitResult* HitResult = Data.GEModData->EffectSpec.GetContext().GetHitResult();
+		if(HitResult)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("DAMAGE CHANGED WITH HIT RESULT"));
+			ESHitDirection HitDirection = GetHitDirection(HitResult->Location);
+			OnHit.Broadcast(HitDirection);
+		}
+		
+	}
+}
+
+ESHitDirection ASCharacterBase::GetHitDirection(const FVector& ImpactPoint)
+{
+	const FVector& ActorLocation = GetActorLocation();
+	// PointPlaneDist is super cheap - 1 vector subtraction, 1 dot product.
+	float DistanceToFrontBackPlane = FVector::PointPlaneDist(ImpactPoint, ActorLocation, GetActorRightVector());
+	float DistanceToRightLeftPlane = FVector::PointPlaneDist(ImpactPoint, ActorLocation, GetActorForwardVector());
+
+
+	if (FMath::Abs(DistanceToFrontBackPlane) <= FMath::Abs(DistanceToRightLeftPlane))
+	{
+		// Determine if Front or Back
+
+		// Can see if it's left or right of Left/Right plane which would determine Front or Back
+		if (DistanceToRightLeftPlane >= 0)
+		{
+			return ESHitDirection::Front;
+		}
+		else
+		{
+			return ESHitDirection::Back;
+		}
+	}
+	else
+	{
+		// Determine if Right or Left
+
+		if (DistanceToFrontBackPlane >= 0)
+		{
+			return ESHitDirection::Right;
+		}
+		else
+		{
+			return ESHitDirection::Left;
+		}
+	}
 }
 
 int32 ASCharacterBase::GetCharacterLevel() const

@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
+#include "Sorcerer/Sorcerer.h"
 #include "SCharacterBase.generated.h"
 
 struct FOnAttributeChangeData;
@@ -14,6 +15,8 @@ class USAttributeSet;
 class USAbilitySystemComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FAttributeChangedDelegate, ASCharacterBase*, Owner, float, NewValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FHitDelegate, ESHitDirection, Direction);
+
 
 /**
  * Base Class for Sorcerer Characters to support Gameplay Ability System
@@ -60,6 +63,12 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Sorcerer|Attributes")
 	FAttributeChangedDelegate OnMaxHealthChanged;
 
+	UFUNCTION(BlueprintCallable, Category = "Sorcerer")
+	void SetRagdollEnabled(bool bEnabled);
+
+	UPROPERTY(BlueprintAssignable, Category = "Sorcerer")
+	FHitDelegate OnHit;
+
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	USAbilitySystemComponent* AbilitySystemComponent;
@@ -94,4 +103,7 @@ protected:
 	
 	virtual void MaxHealthChanged(const FOnAttributeChangeData& Data);
 
+	virtual void DamageChanged(const FOnAttributeChangeData& Data);
+
+	ESHitDirection GetHitDirection(const FVector& ImpactPoint);
 };

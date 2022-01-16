@@ -16,3 +16,13 @@ enum class ESAbilityInputID : uint8
 	Ability2,
 	Ability3
 };
+
+UENUM(BlueprintType)
+enum class ESHitDirection : uint8
+{
+	None,
+	Front,
+	Back,
+	Left,
+	Right
+};
