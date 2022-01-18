@@ -28,7 +28,7 @@ void ASEnemyCharacter::HealthChanged(const FOnAttributeChangeData& Data)
 		HealthBarWidget->SetVisibility(false, true);
 
 		AAIController* AIC = Cast<AAIController>(GetController());
-		if(AIC)
+		if(AIC && AIC->GetBrainComponent())
 		{
 			AIC->GetBrainComponent()->StopLogic("Killed");
 		}
