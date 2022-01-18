@@ -5,10 +5,10 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "Sorcerer/Sorcerer.h"
+#include "GameplayTagContainer.h"
 #include "SCharacterBase.generated.h"
 
 struct FOnAttributeChangeData;
-struct FGameplayTagContainer;
 class UGameplayEffect;
 class USGameplayAbility;
 class USAttributeSet;
@@ -68,6 +68,15 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Sorcerer")
 	FHitDelegate OnHit;
+
+	// Check if the ability that match the given tags can be activated
+	// @TODO At the moment, I only check the first ability found
+	UFUNCTION(BlueprintCallable, Category = "Sorcerer|Ability")
+	bool CanActivateAbilityByTag(FGameplayTagContainer AbilityTags);
+
+    // Check if a Gameplay Effect with the given Tags is active and get the remaining time and the duration 
+	UFUNCTION(BlueprintCallable, Category = "Sorcerer|Ability")
+	bool GetRemainingTimeForGameplayEffectByTag(FGameplayTagContainer CooldownTags, float& TimeRemaining, float& CooldownDuration);
 
 protected:
 	UPROPERTY(BlueprintReadOnly)

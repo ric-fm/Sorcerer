@@ -75,6 +75,58 @@ void ASCharacterBase::SetRagdollEnabled(bool bEnabled)
 	}
 }
 
+bool ASCharacterBase::CanActivateAbilityByTag(FGameplayTagContainer AbilityTags)
+{
+	if(AbilitySystemComponent)
+	{
+		TArray<FGameplayAbilitySpec*> Abilities;
+		AbilitySystemComponent->GetActivatableGameplayAbilitySpecsByAllMatchingTags(AbilityTags, Abilities);
+
+		if(Abilities.Num() > 0)
+		{
+			FGameplayAbilitySpec* AbilitySpec = Abilities[0];
+			FGameplayAbilityActorInfo* ActorInfo = AbilitySystemComponent->AbilityActorInfo.Get();
+			FGameplayAbilitySpecHandle AbilitySpecHandle = AbilitySpec->Handle;
+			
+			return AbilitySpec->Ability->CanActivateAbility(AbilitySpecHandle, ActorInfo);
+		}
+	}
+	return false;
+}
+
+bool ASCharacterBase::GetRemainingTimeForGameplayEffectByTag(FGameplayTagContainer CooldownTags, float& TimeRemaining,
+                                                 float& CooldownDuration)
+{
+	if (AbilitySystemComponent && CooldownTags.Num() > 0)
+	{
+		TimeRemaining = 0.f;
+		CooldownDuration = 0.f;
+
+		FGameplayEffectQuery const Query = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(CooldownTags);
+		TArray< TPair<float, float> > DurationAndTimeRemaining = AbilitySystemComponent->GetActiveEffectsTimeRemainingAndDuration(Query);
+		if (DurationAndTimeRemaining.Num() > 0)
+		{
+			int32 BestIdx = 0;
+			float LongestTime = DurationAndTimeRemaining[0].Key;
+			for (int32 Idx = 1; Idx < DurationAndTimeRemaining.Num(); ++Idx)
+			{
+				if (DurationAndTimeRemaining[Idx].Key > LongestTime)
+				{
+					LongestTime = DurationAndTimeRemaining[Idx].Key;
+					BestIdx = Idx;
+				}
+			}
+
+			TimeRemaining = DurationAndTimeRemaining[BestIdx].Key;
+			CooldownDuration = DurationAndTimeRemaining[BestIdx].Value;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void ASCharacterBase::AddStartupAbilities()
 {
 	// Grant abilities (only on server)
@@ -158,11 +210,9 @@ void ASCharacterBase::DamageChanged(const FOnAttributeChangeData& Data)
 		const FHitResult* HitResult = Data.GEModData->EffectSpec.GetContext().GetHitResult();
 		if(HitResult)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("DAMAGE CHANGED WITH HIT RESULT"));
 			ESHitDirection HitDirection = GetHitDirection(HitResult->Location);
 			OnHit.Broadcast(HitDirection);
 		}
-		
 	}
 }
 
