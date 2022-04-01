@@ -14,9 +14,6 @@ ASCharacterBase::ASCharacterBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	AbilitySystemComponent = CreateDefaultSubobject<USAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	AttributeSet = CreateDefaultSubobject<USAttributeSet>(TEXT("AttributeSet"));
-
 	bAbilitiesGranted = false;
 	bEffectsApplied = false;
 
@@ -31,23 +28,7 @@ void ASCharacterBase::BeginPlay()
 
 UAbilitySystemComponent* ASCharacterBase::GetAbilitySystemComponent() const
 {
-	return AbilitySystemComponent;
-}
-
-void ASCharacterBase::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-
-	if(AbilitySystemComponent)
-	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-		AddStartupAbilities();
-		AddStartupEffects();
-
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this,&ASCharacterBase::HealthChanged);
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMaxHealthAttribute()).AddUObject(this,&ASCharacterBase::MaxHealthChanged);
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetDamageAttribute()).AddUObject(this,&ASCharacterBase::DamageChanged);
-	}
+	return AbilitySystemComponent.Get();
 }
 
 bool ASCharacterBase::IsAlive() const
@@ -77,7 +58,7 @@ void ASCharacterBase::SetRagdollEnabled(bool bEnabled)
 
 bool ASCharacterBase::CanActivateAbilityByTag(FGameplayTagContainer AbilityTags)
 {
-	if(AbilitySystemComponent)
+	if(AbilitySystemComponent.IsValid())
 	{
 		TArray<FGameplayAbilitySpec*> Abilities;
 		AbilitySystemComponent->GetActivatableGameplayAbilitySpecsByAllMatchingTags(AbilityTags, Abilities);
@@ -97,7 +78,7 @@ bool ASCharacterBase::CanActivateAbilityByTag(FGameplayTagContainer AbilityTags)
 bool ASCharacterBase::GetRemainingTimeForGameplayEffectByTag(FGameplayTagContainer CooldownTags, float& TimeRemaining,
                                                  float& CooldownDuration)
 {
-	if (AbilitySystemComponent && CooldownTags.Num() > 0)
+	if (AbilitySystemComponent.IsValid() && CooldownTags.Num() > 0)
 	{
 		TimeRemaining = 0.f;
 		CooldownDuration = 0.f;
@@ -130,7 +111,7 @@ bool ASCharacterBase::GetRemainingTimeForGameplayEffectByTag(FGameplayTagContain
 void ASCharacterBase::AddStartupAbilities()
 {
 	// Grant abilities (only on server)
-	if(bAbilitiesGranted || GetLocalRole() != ROLE_Authority)
+	if(bAbilitiesGranted || !AbilitySystemComponent.IsValid() ||  GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -146,7 +127,7 @@ void ASCharacterBase::AddStartupAbilities()
 void ASCharacterBase::RemoveStartupAbilities()
 {
 	// Revoke abilities (only on server)
-	if(!bAbilitiesGranted || GetLocalRole() != ROLE_Authority)
+	if(!bAbilitiesGranted || !AbilitySystemComponent.IsValid() ||  GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -173,7 +154,7 @@ void ASCharacterBase::RemoveStartupAbilities()
 void ASCharacterBase::AddStartupEffects()
 {
 	// Apply effects (only on server)
-	if(bEffectsApplied || GetLocalRole() != ROLE_Authority)
+	if(bEffectsApplied || !AbilitySystemComponent.IsValid() || GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -186,11 +167,18 @@ void ASCharacterBase::AddStartupEffects()
 		FGameplayEffectSpecHandle GameplayEffectSpecHandle = AbilitySystemComponent->MakeOutgoingSpec(GameplayEffect, GetCharacterLevel(), EffectContextHandle);
 		if(GameplayEffectSpecHandle.IsValid())
 		{
-			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*GameplayEffectSpecHandle.Data.Get(), AbilitySystemComponent);
+			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*GameplayEffectSpecHandle.Data.Get(), AbilitySystemComponent.Get());
 		}
 	}
 
 	bEffectsApplied = true;
+}
+
+void ASCharacterBase::SetupListeners()
+{
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this,&ASCharacterBase::HealthChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMaxHealthAttribute()).AddUObject(this,&ASCharacterBase::MaxHealthChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetDamageAttribute()).AddUObject(this,&ASCharacterBase::DamageChanged);
 }
 
 void ASCharacterBase::HealthChanged(const FOnAttributeChangeData& Data)

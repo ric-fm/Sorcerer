@@ -19,6 +19,13 @@ class SORCERER_API ASEnemyCharacter : public ASCharacterBase
 
 public:
 	ASEnemyCharacter();
+
+protected:
+	UPROPERTY()
+	USAbilitySystemComponent* HardRefAbilitySystemComponent;
+
+	UPROPERTY()
+	USAttributeSet* HardRefAttributeSet;
 	
 protected:
 	virtual void HealthChanged(const FOnAttributeChangeData& Data) override;

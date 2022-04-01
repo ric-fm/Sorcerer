@@ -1,7 +1,9 @@
 #include "SPlayerCharacter.h"
 
+#include "SPlayerState.h"
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Abilities/SAbilitySystemComponent.h"
+#include "Abilities/SAttributeSet.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Sorcerer/Sorcerer.h"
@@ -29,12 +31,43 @@ void ASPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	BindAbilitiesInput();
 }
 
+void ASPlayerCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (!GetPlayerState() || GetLocalRole() != ROLE_Authority)
+	{
+		return;
+	}
+
+	ASPlayerState* PS = Cast<ASPlayerState>(GetPlayerState());
+	if(PS)
+	{
+		AbilitySystemComponent = PS->AbilitySystemComponent;
+		AttributeSet = PS->AttributeSet;
+
+		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+		AddStartupAbilities();
+		AddStartupEffects();
+		SetupListeners();
+	}
+}
+
 void ASPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// Bind player input to the AbilitySystemComponent. Also called in SetupPlayerInputComponent because of a potential race condition.
-	BindAbilitiesInput();
+	ASPlayerState* PS = Cast<ASPlayerState>(GetPlayerState());
+	if(PS)
+	{
+		AbilitySystemComponent = PS->AbilitySystemComponent;
+		AttributeSet = PS->AttributeSet;
+
+		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+
+		// Bind player input to the AbilitySystemComponent. Also called in SetupPlayerInputComponent because of a potential race condition.
+		BindAbilitiesInput();
+	}
 }
 
 FVector ASPlayerCharacter::GetPawnViewLocation() const
@@ -99,14 +132,16 @@ void ASPlayerCharacter::Turn(float Value)
 
 void ASPlayerCharacter::BindAbilitiesInput()
 {
-	if (!bAbilitiesInputBound && AbilitySystemComponent && IsValid(InputComponent))
+	if (bAbilitiesInputBound || !GetPlayerState() || !AbilitySystemComponent.IsValid() || !IsValid(InputComponent))
 	{
-		const FGameplayAbilityInputBinds Binds("Confirm", "Cancel", "ESAbilityInputID",
-		                                       static_cast<int32>(ESAbilityInputID::Confirm),
-		                                       static_cast<int32>(ESAbilityInputID::Cancel));
-
-		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, Binds);
-
-		bAbilitiesInputBound = true;
+		return;
 	}
+	
+	const FGameplayAbilityInputBinds Binds("Confirm", "Cancel", "ESAbilityInputID",
+	                                       static_cast<int32>(ESAbilityInputID::Confirm),
+	                                       static_cast<int32>(ESAbilityInputID::Cancel));
+
+	AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, Binds);
+
+	bAbilitiesInputBound = true;
 }

@@ -29,6 +29,8 @@ ASProjectileBase::ASProjectileBase()
 	ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
 
 	MaxRange = 10000.0f;
+
+	bReplicates = true;
 }
 
 // Called when the game starts or when spawned
@@ -36,10 +38,13 @@ void ASProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Set LifeSpan based on MaxRange
-	if(MaxRange > 0.0f && ProjectileMovementComponent->InitialSpeed > 0.0f)
+	if(HasAuthority())
 	{
-		SetLifeSpan(MaxRange / ProjectileMovementComponent->InitialSpeed);
+		// Set LifeSpan based on MaxRange
+		if(MaxRange > 0.0f && ProjectileMovementComponent->InitialSpeed > 0.0f)
+		{
+			SetLifeSpan(MaxRange / ProjectileMovementComponent->InitialSpeed);
+		}
 	}
 }
 
@@ -71,7 +76,10 @@ void ASProjectileBase::OnHitCharacter_Implementation(const FHitResult& Hit)
 {
 	if(Hit.Actor != GetInstigator())
 	{
-		ApplyEffects(Hit);
+		if(HasAuthority())
+		{
+			ApplyEffects(Hit);
+		}
 		
 		Explode();
 	}
@@ -80,7 +88,10 @@ void ASProjectileBase::OnHitCharacter_Implementation(const FHitResult& Hit)
 void ASProjectileBase::Explode()
 {
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionFX, GetActorLocation());
-	Destroy();
+	if(HasAuthority())
+	{
+		Destroy();
+	}
 }
 
 void ASProjectileBase::ApplyEffects(const FHitResult& Hit)

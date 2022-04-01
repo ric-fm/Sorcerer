@@ -38,9 +38,6 @@ public:
 	// Implements IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
-	virtual void PossessedBy(AController* NewController) override;
-
-	
 	// Get the current character level that is passed to the Ability System 
 	UFUNCTION(BlueprintCallable, Category = "Sorcerer|Attributes")
 	int32 GetCharacterLevel() const;
@@ -79,11 +76,9 @@ public:
 	bool GetRemainingTimeForGameplayEffectByTag(FGameplayTagContainer CooldownTags, float& TimeRemaining, float& CooldownDuration);
 
 protected:
-	UPROPERTY(BlueprintReadOnly)
-	USAbilitySystemComponent* AbilitySystemComponent;
+	TWeakObjectPtr<USAbilitySystemComponent> AbilitySystemComponent;
 
-	UPROPERTY()
-	USAttributeSet* AttributeSet;
+	TWeakObjectPtr<USAttributeSet> AttributeSet;
 
 	// Abilities for this Character granted on startup.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sorcerer|Abilities")
@@ -107,6 +102,8 @@ protected:
 
 	// Apply startup effects (run on the Server, replicated on the owning client)
 	virtual void AddStartupEffects();
+
+	virtual void SetupListeners();
 
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
 	
